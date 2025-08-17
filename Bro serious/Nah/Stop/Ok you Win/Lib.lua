@@ -251,7 +251,7 @@ local function C_8()
 	end
 	
 	-- Adicionar novas páginas dinamicamente
-	function Library:AddPage()
+	function Window:AddPage()
 	    local NewPage = TemplatePage:Clone()
 	    NewPage.Name = "Page"..tostring(#Pages + 1)
 	    NewPage.Parent = Gui
@@ -262,7 +262,7 @@ local function C_8()
 	end
 	
 	-- Criar botão
-	function Library:CreateButton(info)
+	function Window:CreateButton(info)
 	    local Text = info.Text or "Botão"
 	    local Callback = info.Callback or function() end
 	    local Page = info.Page and Pages[info.Page] or Pages[#Pages]
