@@ -179,131 +179,135 @@ G2L["UIDragDetector_14"]["DragUDim2"] = UDim2.new(0, 30, 0, 143);
 
 local function C_8()
 	local script = G2L["LocalScript_8"];
+	--// CONFIG
+	local Players = game:GetService("Players")
+	local LocalPlayer = Players.LocalPlayer
 	
+	local Library = {}
 	
+	-- Garantir que o ScreenGui está no PlayerGui
+	local Gui = script.Parent
+	if not Gui:IsDescendantOf(LocalPlayer:WaitForChild("PlayerGui")) then
+	    Gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+	end
 	
+	--// OBJETOS BASE
+	local Elements = Gui:WaitForChild("Elements")
+	local ButtonElement = Elements:WaitForChild("Button")
+	local TextBoxElement = Elements:WaitForChild("TextBox")
+	local TopBar = Gui:WaitForChild("TopBar")
+	local PagePasser = Gui:WaitForChild("PagePasser")
+	local LeftButton = PagePasser:WaitForChild("<")
+	local RightButton = PagePasser:WaitForChild(">")
 	
+	--// VARIÁVEIS
+	local Pages = {}
+	local CurrentPage = 1
+	local TemplatePage = Gui:WaitForChild("Page1")
 	
+	--// FUNÇÃO DE ATUALIZAR PÁGINAS
+	local function UpdatePages()
+		for i, page in ipairs(Pages) do
+			page.Visible = (i == CurrentPage)
+		end
+	end
 	
+	--// NAVEGAÇÃO ENTRE PÁGINAS
+	LeftButton.MouseButton1Click:Connect(function()
+		CurrentPage -= 1
+		if CurrentPage < 1 then
+			CurrentPage = #Pages
+		end
+		UpdatePages()
+	end)
 	
+	RightButton.MouseButton1Click:Connect(function()
+		CurrentPage += 1
+		if CurrentPage > #Pages then
+			CurrentPage = 1
+		end
+		UpdatePages()
+	end)
 	
+	--// FUNÇÕES PRINCIPAIS
 	
+	-- Criar a janela
+	function Library:CreateWindow(info)
+	    local Name = info.Name or "Sem nome"
+	    local Desc = info.Desc or ""
+	    local CallBack = info.CallBack or function() end
 	
+	    -- Adicionar página inicial se ainda não tiver
+	    if #Pages == 0 then
+	        table.insert(Pages, TemplatePage)
+	        UpdatePages()
+	    end
 	
+	    Gui.Enabled = true
+	    TopBar.Title.Text = Name
+	    TopBar.Author.Text = Desc
 	
+	    pcall(CallBack)
+	end
 	
+	-- Adicionar novas páginas dinamicamente
+	function Library:AddPage()
+	    local NewPage = TemplatePage:Clone()
+	    NewPage.Name = "Page"..tostring(#Pages + 1)
+	    NewPage.Parent = Gui
+	    NewPage.Visible = false
 	
-	--// CONFIG	
-	local Library = {}	
-	local Gui = script.Parent -- ScreenGui principal	
+	    table.insert(Pages, NewPage)
+	    return NewPage
+	end
 	
-	--// OBJETOS BASE	
-	local Elements = Gui:WaitForChild("Elements")	
-	local ButtonElement = Elements:FindFirstChild("Button")	
-	local TextBoxElement = Elements:FindFirstChild("TextBox")	
-	local TopBar = Gui:FindFirstChild("TopBar")	
-	local PagePasser = Gui:WaitForChild("PagePasser")	
-	local LeftButton = PagePasser:WaitForChild("<")	
-	local RightButton = PagePasser:WaitForChild(">")	
+	-- Criar botão
+	function Library:CreateButton(info)
+	    local Text = info.Text or "Botão"
+	    local Callback = info.Callback or function() end
+	    local Page = info.Page and Pages[info.Page] or Pages[#Pages]
 	
-	--// VARIÁVEIS	
-	local Pages = {}	
-	local CurrentPage = 1	
-	local TemplatePage = Gui:FindFirstChild("Page1")	
+	    if not Page then
+	        warn("Nenhuma página disponível para criar botão!")
+	        return
+	    end
 	
-	--// FUNÇÃO DE ATUALIZAR PÁGINAS	
-	local function UpdatePages()	
-		for i, page in ipairs(Pages) do	
-			page.Visible = (i == CurrentPage)	
-		end	
-	end	
+	    local NewButton = ButtonElement:Clone()
+	    NewButton.Parent = Page
+	    NewButton.Text = Text
 	
-	--// NAVEGAÇÃO	
-	LeftButton.MouseButton1Click:Connect(function()	
-		CurrentPage -= 1	
-		if CurrentPage < 1 then	
-			CurrentPage = #Pages	
-		end	
-		UpdatePages()	
-	end)	
+	    NewButton.MouseButton1Click:Connect(function()
+	        pcall(Callback)
+	    end)
 	
-	RightButton.MouseButton1Click:Connect(function()	
-		CurrentPage += 1	
-		if CurrentPage > #Pages then	
-			CurrentPage = 1	
-		end	
-		UpdatePages()	
-	end)	
+	    return NewButton
+	end
 	
-	--// FUNÇÕES PRINCIPAIS	
-	function Library:CreateWindow(info)	
-	    local Name = info.Name or "Sem nome"	
-	    local Desc = info.Desc or ""	
-	    local CallBack = info.CallBack or function() end	
+	-- Criar caixa de texto
+	function Library:CreateTextBox(info)
+	    local Placeholder = info.Placeholder or "Digite aqui..."
+	    local Callback = info.Callback or function() end
+	    local Page = info.Page and Pages[info.Page] or Pages[#Pages]
 	
-	    -- Primeira página já existente vira a inicial	
-	    table.insert(Pages, TemplatePage)	
-	    UpdatePages()	
+	    if not Page then
+	        warn("Nenhuma página disponível para criar TextBox!")
+	        return
+	    end
 	
-	    Gui.Enabled = true	
-	    TopBar.Title.Text = Name	
-	    TopBar.Author.Text = Desc	
+	    local NewTextBox = TextBoxElement:Clone()
+	    NewTextBox.Parent = Page
+	    NewTextBox.PlaceholderText = Placeholder
 	
-	    pcall(CallBack)	
-	end	
+	    NewTextBox.FocusLost:Connect(function(enterPressed)
+	        if enterPressed then
+	            pcall(Callback, NewTextBox.Text)
+	        end
+	    end)
 	
-	-- Adicionar novas páginas dinamicamente	
-	function Library:AddPage()	
-	    local NewPage = TemplatePage:Clone()	
-	    NewPage.Name = "Page"..tostring(#Pages+1)	
-	    NewPage.Parent = Gui	
-	    NewPage.Visible = false	
-	    	
-	    table.insert(Pages, NewPage)	
-	    return NewPage	
-	end	
+	    return NewTextBox
+	end
 	
-	-- Criar botão	
-	function Library:CreateButton(info)	
-	    local Text = info.Text or "Botão"	
-	    local Callback = info.Callback or function() end	
-	
-	    local Page = info.Page and Pages[info.Page] or Pages[#Pages]	
-	    if not Page then return end	
-	
-	    local NewButton = ButtonElement:Clone()	
-	    NewButton.Parent = Page	
-	    NewButton.Text = Text	
-	
-	    NewButton.MouseButton1Click:Connect(function()	
-	        pcall(Callback)	
-	    end)	
-	
-	    return NewButton	
-	end	
-	
-	-- Criar caixa de texto	
-	function Library:CreateTextBox(info)	
-	    local Placeholder = info.Placeholder or "Digite aqui..."	
-	    local Callback = info.Callback or function() end	
-	
-	    local Page = info.Page and Pages[info.Page] or Pages[#Pages]	
-	    if not Page then return end	
-	
-	    local NewTextBox = TextBoxElement:Clone()	
-	    NewTextBox.Parent = Page	
-	    NewTextBox.PlaceholderText = Placeholder	
-	
-	    NewTextBox.FocusLost:Connect(function(enterPressed)	
-	        if enterPressed then	
-	            pcall(Callback, NewTextBox.Text)	
-	        end	
-	    end)	
-	
-	    return NewTextBox	
-	end	
-	
-	return Library	
+	return Library
 end;
 task.spawn(C_8);
 
